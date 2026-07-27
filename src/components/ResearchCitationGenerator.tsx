@@ -68,6 +68,23 @@ export const ResearchCitationGenerator: React.FC = () => {
     return `${c.author}. "${c.title}." ${c.publisher}, ${c.year}, ${c.url}. Accessed ${c.accessDate}.`;
   };
 
+  const sanitizeUrl = (rawUrl: string): string => {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return '#';
+
+    try {
+      const parsed = new URL(trimmed);
+      const protocol = parsed.protocol.toLowerCase();
+      if (protocol === 'http:' || protocol === 'https:') {
+        return parsed.toString();
+      }
+    } catch {
+      // Invalid URL
+    }
+
+    return '#';
+  };
+
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
@@ -78,13 +95,15 @@ export const ResearchCitationGenerator: React.FC = () => {
     e.preventDefault();
     if (!title.trim() || !url.trim()) return;
 
+    const sanitizedUrl = sanitizeUrl(url);
+
     const newCitation: CitationItem = {
       id: `cite-${Date.now()}`,
       author: author.trim() || 'Anonymous / Web Source',
       year: year.trim() || '2026',
       title: title.trim(),
       publisher: publisher.trim() || 'Academic Web Index',
-      url: url.trim(),
+      url: sanitizedUrl,
       accessDate: '27 Jul. 2026',
       synthesizedExcerpt: excerpt.trim() || 'Synthesized web content indexed for student project.'
     };
@@ -278,7 +297,7 @@ export const ResearchCitationGenerator: React.FC = () => {
                 </div>
 
                 <a
-                  href={item.url}
+                  href={sanitizeUrl(item.url)}
                   target="_blank"
                   rel="noreferrer"
                   className="p-1 text-[#63879a] hover:text-white transition-colors"
