@@ -2,9 +2,11 @@ steps:
   # Step 1: Install dependencies
   - name: 'node:18'
     entrypoint: npm
-    args: ['install']
+    args: ['ci']
+    env:
+      - 'SKIP_PREINSTALL_CHECK=1'
 
-  # Step 2: Run linting
+  # Step 2: Run linting (TypeScript type checking)
   - name: 'node:18'
     entrypoint: npm
     args: ['run', 'lint']
@@ -22,6 +24,10 @@ steps:
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:${SHORT_SHA}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:latest'
+      - '--build-arg'
+      - 'BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')'
+      - '--build-arg'
+      - 'VCS_REF=${SHORT_SHA}'
       - '.'
 
   # Step 5: Push image to Artifact Registry
@@ -29,8 +35,16 @@ steps:
     args:
       - 'push'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:${SHORT_SHA}'
+    waitFor: ['-']
 
-  # Step 6: Deploy to Cloud Run
+  # Step 6: Push latest tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:latest'
+    waitFor: ['-']
+
+  # Step 7: Deploy to Cloud Run
   - name: 'gcr.io/cloud-builders/run'
     args:
       - 'deploy'
@@ -41,7 +55,15 @@ steps:
       - '${_REGION}'
       - '--platform'
       - 'managed'
+      - '--memory'
+      - '${_MEMORY}'
+      - '--cpu'
+      - '${_CPU}'
+      - '--timeout'
+      - '${_TIMEOUT}'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NODE_ENV=production'
 
 # Substitution variables - customize these for your setup
 substitutions:
@@ -49,11 +71,15 @@ substitutions:
   _REPOSITORY: 'lmd-repo'
   _IMAGE_NAME: 'lmd-app'
   _SERVICE_NAME: 'lmd-service'
+  _MEMORY: '512Mi'
+  _CPU: '1'
+  _TIMEOUT: '300'
 
 # Build options
 options:
   machineType: 'N1_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
+  substitutionOption: 'ALLOW_LOOSE'
 
 # Images to be pushed to the registry
 images:
