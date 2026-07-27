@@ -21,7 +21,8 @@ import {
 import { ApiService } from '../services/api';
 
 export const DeveloperApiEngineView: React.FC = () => {
-  const [apiKey, setApiKey] = useState('zal_dev_sk_9f83a27e10b244c98d701a2b');
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_API_KEY || '');
+  const [apiKey, setApiKey] = useState(process.env.REACT_APP_API_KEY || '');
   const [showKey, setShowKey] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
