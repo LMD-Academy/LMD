@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "Course": {
+      "title": "Course",
+      "description": "An eLearning course created or imported from Google Classroom",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string" },
+        "description": { "type": "string", "maxLength": 2000 },
+        "level": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "author": { "type": "string" },
+        "authorId": { "type": "string" },
+        "classroomId": { "type": "string" },
+        "rating": { "type": "number" },
+        "durationHours": { "type": "number" },
+        "tags": { "type": "array" },
+        "isAiGenerated": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "category", "description", "level", "authorId"]
+    },
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "Tracks learner course progress, XP, completed lessons, and certificates",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "completedLessonIds": { "type": "array" },
+        "xp": { "type": "number" },
+        "adaptiveLevel": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "courseId", "completedLessonIds", "xp"]
+    },
+    "ClassroomCourse": {
+      "title": "ClassroomCourse",
+      "description": "Cached Google Classroom course metadata and synced status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "section": { "type": "string" },
+        "descriptionHeading": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "courseState": { "type": "string" },
+        "alternateLink": { "type": "string" },
+        "syncedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "ownerId"]
+    },
+    "ForumThread": {
+      "title": "ForumThread",
+      "description": "Community forum discussion thread created by students or teachers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 250 },
+        "category": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "content": { "type": "string", "maxLength": 5000 },
+        "tags": { "type": "array" },
+        "upvotes": { "type": "number" },
+        "replyCount": { "type": "number" },
+        "isSolved": { "type": "boolean" },
+        "courseId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "category", "authorId", "authorName", "content"]
+    },
+    "ForumReply": {
+      "title": "ForumReply",
+      "description": "Reply or answer to a forum thread",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "threadId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "content": { "type": "string", "maxLength": 3000 },
+        "upvotes": { "type": "number" },
+        "isTeacherAnswer": { "type": "boolean" },
+        "isAcceptedSolution": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["threadId", "authorId", "authorName", "content"]
+    },
+    "StudyGuide": {
+      "title": "StudyGuide",
+      "description": "AI-generated personalized study guide for students based on learning progress and weak areas",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "title": { "type": "string" },
+        "progressScore": { "type": "number" },
+        "weakAreas": { "type": "array" },
+        "conceptSummaries": { "type": "array" },
+        "practiceQuestions": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "subject", "title"]
+    },
+    "LessonNote": {
+      "title": "LessonNote",
+      "description": "Real-time shared lesson annotations saved to Firestore by students",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "courseId": { "type": "string" },
+        "lessonId": { "type": "string" },
+        "sectionTitle": { "type": "string" },
+        "content": { "type": "string", "maxLength": 3000 },
+        "tag": { "type": "string" },
+        "authorName": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["courseId", "lessonId", "content", "userId"]
+    },
+    "StudentAnalyticsEvent": {
+      "title": "StudentAnalyticsEvent",
+      "description": "Student offline engagement tracker data synced to Firestore",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "lessonId": { "type": "string" },
+        "metricType": { "type": "string" },
+        "value": { "type": "number" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["userId", "courseId", "lessonId", "metricType", "value"]
+    }
+  },
+  "firestore": {
+    "/studentAnalytics/{eventId}": {
+      "schema": "StudentAnalyticsEvent",
+      "description": "Collection of student offline interaction and time-on-page analytics events synced from IndexedDB"
+    },
+    "/lessonNotes/{noteId}": {
+      "schema": "LessonNote",
+      "description": "Collection of real-time student lesson annotations and shared notes"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Collection of all academy courses, including Google Classroom imports"
+    },
+    "/forumThreads/{threadId}": {
+      "schema": "ForumThread",
+      "description": "Community discussion threads"
+    },
+    "/forumThreads/{threadId}/replies/{replyId}": {
+      "schema": "ForumReply",
+      "description": "Replies to a community discussion thread"
+    },
+    "/users/{userId}/progress/{courseId}": {
+      "schema": "UserProgress",
+      "description": "Subcollection storing learner progress for specific courses"
+    },
+    "/users/{userId}/classroomCourses/{classroomId}": {
+      "schema": "ClassroomCourse",
+      "description": "User Google Classroom synced courses"
+    },
+    "/users/{userId}/studyGuides/{guideId}": {
+      "schema": "StudyGuide",
+      "description": "Personalized AI study guides for the user"
+    }
+  }
+}

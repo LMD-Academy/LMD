@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Lesson Notes (Real-time shared annotations)
+    match /lessonNotes/{noteId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid);
+    }
+
+    // Student Analytics (Offline synced telemetry)
+    match /studentAnalytics/{eventId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid);
+    }
+
+    // Module Chats (Real-time peer-to-peer module matching & study groups)
+    match /moduleChats/{msgId} {
+      allow read, create, update, delete: if true;
+    }
+
+    // Public or Authenticated Courses
+    match /courses/{courseId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.resource.data.authorId == request.auth.uid);
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    // Community Forum Threads
+    match /forumThreads/{threadId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && (resource.data.authorId == request.auth.uid || request.auth.token.email_verified == true);
+
+      // Replies Subcollection
+      match /replies/{replyId} {
+        allow read: if true;
+        allow create: if isSignedIn() && request.resource.data.authorId == request.auth.uid;
+        allow update: if isSignedIn();
+        allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    // User Progress Subcollection
+    match /users/{userId}/progress/{courseId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // User Study Guides Subcollection
+    match /users/{userId}/studyGuides/{guideId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // User Google Classroom Synced Courses
+    match /users/{userId}/classroomCourses/{classroomId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}
