@@ -71,13 +71,13 @@ substitutions:
   _REPOSITORY: 'lmd-repo'
   _IMAGE_NAME: 'lmd-app'
   _SERVICE_NAME: 'lmd-service'
-  _MEMORY: '1024Mi'
+  _MEMORY: '528Mi'
   _CPU: '1'
   _TIMEOUT: '300'
 
 # Build options
 options:
-  machineType: 'E2_HIGHCPU_8'
+  machineType: 'N1_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
   substitutionOption: 'ALLOW_LOOSE'
 
