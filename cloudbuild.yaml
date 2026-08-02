@@ -71,8 +71,8 @@ substitutions:
   _REPOSITORY: 'lmd-repo'
   _IMAGE_NAME: 'lmd-app'
   _SERVICE_NAME: 'lmd-service'
-  _MEMORY: '512Mi'
-  _CPU: '1'
+  _MEMORY: '8192Mi'
+  _CPU: '2'
   _TIMEOUT: '300'
 
 # Build options
