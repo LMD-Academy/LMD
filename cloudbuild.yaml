@@ -25,7 +25,7 @@ steps:
       - '-t'
       - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/${_IMAGE_NAME}:latest'
       - '--build-arg'
-      - 'BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')'
+      - 'BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' # <-- Corrected quoting here
       - '--build-arg'
       - 'VCS_REF=${SHORT_SHA}'
       - '.'
