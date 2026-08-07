@@ -153,7 +153,7 @@ export default function App() {
   };
 
   // Handle Course Completion & Certificate Generation
-  const handleCourseCompleted = (course: Course) => {
+  const handleCourseCompleted = async (course: Course) => {
     const newCert: Certificate = {
       id: `cert-${Date.now()}`,
       verificationId: `ZAL-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
@@ -166,7 +166,7 @@ export default function App() {
       skillsAcquired: course.tags || ['AI Engineering', 'Autonomous Agents']
     };
 
-    const updatedCerts = OfflineStorageService.saveCertificate(newCert);
+    const updatedCerts = await OfflineStorageService.saveCertificate(newCert);
     setCertificates(updatedCerts);
     setSelectedCertificate(newCert);
   };

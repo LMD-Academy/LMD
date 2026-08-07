@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   OFFLINE_QUIZ_QUEUE: 'zalamati_offline_quiz_queue',
   STUDY_GUIDES: 'zalamati_study_guides',
   FORUM_THREADS: 'zalamati_forum_threads',
+  CERTS_ENCRYPTION_KEY: 'zalamati_certs_encryption_key',
 };
 
 export const defaultUser: UserProfile = {
@@ -111,12 +112,73 @@ export class OfflineStorageService {
     }
   }
 
-  static getCertificates(): Certificate[] {
+  private static toBase64(bytes: Uint8Array): string {
+    let binary = '';
+    bytes.forEach((b) => { binary += String.fromCharCode(b); });
+    return btoa(binary);
+  }
+
+  private static fromBase64(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  private static getOrCreateCertEncryptionSecret(): string {
+    let secret = localStorage.getItem(STORAGE_KEYS.CERTS_ENCRYPTION_KEY);
+    if (!secret) {
+      const random = crypto.getRandomValues(new Uint8Array(32));
+      secret = this.toBase64(random);
+      localStorage.setItem(STORAGE_KEYS.CERTS_ENCRYPTION_KEY, secret);
+    }
+    return secret;
+  }
+
+  private static async getCertCryptoKey(): Promise<CryptoKey> {
+    const enc = new TextEncoder();
+    const secret = this.getOrCreateCertEncryptionSecret();
+    const keyMaterial = await crypto.subtle.digest('SHA-256', enc.encode(secret));
+    return crypto.subtle.importKey('raw', keyMaterial, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
+  }
+
+  private static async encryptText(plainText: string): Promise<string> {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await this.getCertCryptoKey();
+    const enc = new TextEncoder();
+    const cipherBuffer = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plainText));
+    const payload = {
+      iv: this.toBase64(iv),
+      data: this.toBase64(new Uint8Array(cipherBuffer)),
+    };
+    return JSON.stringify(payload);
+  }
+
+  private static async decryptText(payloadText: string): Promise<string> {
+    const payload = JSON.parse(payloadText) as { iv: string; data: string };
+    const iv = this.fromBase64(payload.iv);
+    const data = this.fromBase64(payload.data);
+    const key = await this.getCertCryptoKey();
+    const plainBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
+    return new TextDecoder().decode(plainBuffer);
+  }
+
+  static async getCertificates(): Promise<Certificate[]> {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.CERTIFICATES);
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        try {
+          const decrypted = await this.decryptText(saved);
+          const parsed = JSON.parse(decrypted);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) {
+            const encrypted = await this.encryptText(JSON.stringify(parsed));
+            localStorage.setItem(STORAGE_KEYS.CERTIFICATES, encrypted);
+            return parsed;
+          }
+        }
       }
     } catch (e) {
       console.warn('Failed to load certificates:', e);
@@ -124,12 +186,13 @@ export class OfflineStorageService {
     return INITIAL_CERTIFICATES;
   }
 
-  static saveCertificate(cert: Certificate): Certificate[] {
-    const certs = this.getCertificates();
+  static async saveCertificate(cert: Certificate): Promise<Certificate[]> {
+    const certs = await this.getCertificates();
     if (!certs.some(c => c.id === cert.id || c.verificationId === cert.verificationId)) {
       certs.unshift(cert);
       try {
-        localStorage.setItem(STORAGE_KEYS.CERTIFICATES, JSON.stringify(certs));
+        const encrypted = await this.encryptText(JSON.stringify(certs));
+        localStorage.setItem(STORAGE_KEYS.CERTIFICATES, encrypted);
       } catch (e) {
         console.error('Failed to save certificate:', e);
       }
